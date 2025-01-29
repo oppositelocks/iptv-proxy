@@ -1,47 +1,72 @@
 version: "3"
 services:
+  gluetun:
+    image: qmcgaw/gluetun:v3.39.1
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - 8888:8888/tcp # gluetun HTTP proxy
+      - 8388:8388/tcp # gluetun Shadowsocks
+      - 8388:8388/udp # gluetun Shadowsocks
+      - 8080:8080
+      - 3000:3000
+      - 3001:3001
+    volumes:
+      - /data/apps/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      - SERVER_COUNTRIES=Netherlands
+      - TZ=Europe/Amsterdam
+      - UPDATER_PERIOD=
+      - HTTPPROXY=off
+      - HTTP_CONTROL_SERVER_ADDRESS=:8001
+      - UPDATER_PERIOD=24h
+      - UPDATER_VPN_SERVICE_PROVIDERS=protonvpn
+    restart: always
   iptv-proxy:
     build:
       context: .
       dockerfile: Dockerfile
-    healthcheck:
-      test: wget --no-verbose --tries=1 --spider https://1.1.1.1 || exit 1
-      interval: 5m # Default: 30s
-      timeout: 15s # Default: 30s
-      retries: 1 # Default: 3
-      start_period: 5s # Default: 0s
-      start_interval: 10s # Default: 5s
     volumes:
       # If your are using local m3u file instead of m3u remote file
       # put your m3u file in this folder
-      - ./iptv:/root/iptv
-    container_name: "iptv-proxy"
-    restart: on-failure
-    ports:
-       # have to be the same as ENV variable PORT
-      - 8080:8080
+      - /data/apps/iptv-proxy:/root/iptv
+    container_name: iptv-proxy
+    restart: always
+    #    ports:
+    # have to be the same as ENV variable PORT
+    #      - 8080:8080
     environment:
       # if you are using m3u remote file
       # M3U_URL: https://example.com/iptvfile.m3u
-      M3U_URL: /root/iptv/iptv.m3u
+      M3U_URL: http://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       # Port to expose the IPTVs endpoints
       PORT: 8080
       # Hostname or IP to expose the IPTVs endpoints (for machine not for docker)
-      HOSTNAME: localhost
+      HOSTNAME: iptvproxy
       GIN_MODE: release
       ## Xtream-code proxy configuration
-      XTREAM_USER: xtream_user
-      XTREAM_PASSWORD: xtream_password
-      XTREAM_BASE_URL: "http://example.tv:8080"
+
       ##### UNSAFE AUTH TODO ADD REAL AUTH
       #will be used for m3u and xtream auth poxy
       USER: test
       PASSWORD: testpassword
-      # ---- Additional debugging options ----
-      #DEBUG_LOGGING: true
-      # Save the IPTV Provider responses to this location
-      #CACHE_FOLDER: /root/iptv/cache/
-      # Default to using Advanced parsing. Disable it with:
-      #USE_XTREAM_LEGACY_PARSING: true
-      # ERROR_DETAIL_LEVEL values: none, simple (default), full
-      #ERROR_DETAIL_LEVEL: simple
+      CACHE_FOLDER: /root/iptv/cache
+    network_mode: service:gluetun # Connect to gluetun service (only if in the same compose file)
+    depends_on:
+      gluetun:
+        condition: service_healthy
+  speedtest:
+    restart: unless-stopped
+    container_name: openspeedtest
+    network_mode: service:gluetun # Connect to gluetun service (only if in the same compose file)
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    image: openspeedtest/latest
+networks: {}
