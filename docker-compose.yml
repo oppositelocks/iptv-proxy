@@ -1,8 +1,9 @@
 version: "3"
 services:
   gluetun:
-    image: qmcgaw/gluetun:v3.39.1
+    image: qmcgaw/gluetun
     container_name: gluetun
+    restart: always
     cap_add:
       - NET_ADMIN
     devices:
@@ -11,23 +12,23 @@ services:
       - 8888:8888/tcp # gluetun HTTP proxy
       - 8388:8388/tcp # gluetun Shadowsocks
       - 8388:8388/udp # gluetun Shadowsocks
-      - 8080:8080
-      - 3000:3000
-      - 3001:3001
+      - 8080:8080 # IPTV proxy
     volumes:
       - /data/apps/gluetun:/gluetun
     environment:
       - VPN_SERVICE_PROVIDER=protonvpn
-      - VPN_TYPE=wireguard
-      - WIREGUARD_PRIVATE_KEY=XXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      - OPENVPN_USER=XXXXXXXXXX
+      - OPENVPN_PASSWORD=XXXXXXXXXX
       - SERVER_COUNTRIES=Netherlands
+      - FREE_ONLY=on
+      # Timezone for accurate log times
       - TZ=Europe/Amsterdam
+      # Server list updater
+      # See https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list
       - UPDATER_PERIOD=
       - HTTPPROXY=off
       - HTTP_CONTROL_SERVER_ADDRESS=:8001
-      - UPDATER_PERIOD=24h
-      - UPDATER_VPN_SERVICE_PROVIDERS=protonvpn
-    restart: always
+    
   iptv-proxy:
     build:
       context: .
@@ -36,15 +37,12 @@ services:
       # If your are using local m3u file instead of m3u remote file
       # put your m3u file in this folder
       - /data/apps/iptv-proxy:/root/iptv
-    container_name: iptv-proxy
+    container_name: "iptv-proxy"
     restart: always
-    #    ports:
-    # have to be the same as ENV variable PORT
-    #      - 8080:8080
     environment:
       # if you are using m3u remote file
       # M3U_URL: https://example.com/iptvfile.m3u
-      M3U_URL: http://XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      M3U_URL: http://XXXXXXXXXX:8000/get.php?username=XXXXXXXXXX&password=XXXXXXXXXX&type=m3u_plus&output=mpegts
       # Port to expose the IPTVs endpoints
       PORT: 8080
       # Hostname or IP to expose the IPTVs endpoints (for machine not for docker)
@@ -56,17 +54,7 @@ services:
       #will be used for m3u and xtream auth poxy
       USER: test
       PASSWORD: testpassword
-      CACHE_FOLDER: /root/iptv/cache
-    network_mode: service:gluetun # Connect to gluetun service (only if in the same compose file)
+    network_mode: "service:gluetun" # Connect to gluetun service (only if in the same compose file)
     depends_on:
       gluetun:
         condition: service_healthy
-  speedtest:
-    restart: unless-stopped
-    container_name: openspeedtest
-    network_mode: service:gluetun # Connect to gluetun service (only if in the same compose file)
-    depends_on:
-      gluetun:
-        condition: service_healthy
-    image: openspeedtest/latest
-networks: {}

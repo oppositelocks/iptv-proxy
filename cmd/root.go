@@ -25,9 +25,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pierre-emmanuelJ/iptv-proxy/pkg/config"
+	"github.com/incmve/iptv-proxy/pkg/config"
 
-	"github.com/pierre-emmanuelJ/iptv-proxy/pkg/server"
+	"github.com/incmve/iptv-proxy/pkg/server"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -68,15 +68,6 @@ var rootCmd = &cobra.Command{
 				xtreamPassword = password
 				xtreamBaseURL = fmt.Sprintf("%s://%s", remoteHostURL.Scheme, remoteHostURL.Host)
 				log.Printf("[iptv-proxy] INFO: xtream service enable with xtream base url: %q xtream username: %q xtream password: %q", xtreamBaseURL, xtreamUser, xtreamPassword)
-			}
-		}
-
-		config.DebugLoggingEnabled = viper.GetBool("debug-logging")
-		config.CacheFolder = viper.GetString("cache-folder")
-		if config.CacheFolder != "" {
-			// Ensure CacheFolder ends with a '/'
-			if config.CacheFolder != "" && !strings.HasSuffix(config.CacheFolder, "/") {
-				config.CacheFolder += "/"
 			}
 		}
 
