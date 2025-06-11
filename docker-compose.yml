@@ -53,6 +53,11 @@ services:
       #will be used for m3u and xtream auth poxy
       USER: test
       PASSWORD: testpassword
+      
+      ## Buffer configuration
+      BUFFER_ENABLED: true
+      BUFFER_DURATION: 5
+      BUFFER_MAX_MEMORY: 10
     network_mode: "service:gluetun" # Connect to gluetun service (only if in the same compose file)
     depends_on:
       gluetun:

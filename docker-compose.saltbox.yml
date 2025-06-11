@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  iptv:
+    image: iptv-proxy:latest
+    container_name: iptv
+    restart: unless-stopped
+    
+    networks:
+      - saltbox
+    
+    environment:
+      # Saltbox required environment variables
+      PUID: 1000
+      PGID: 1000
+      TZ: Etc/UTC
+      
+      # IPTV Proxy configuration
+      # Replace with your actual M3U URL or use Xtream configuration below
+      # M3U_URL: "http://your-provider.com:8000/get.php?username=USERNAME&password=PASSWORD&type=m3u_plus&output=mpegts"
+      
+      # Xtream API configuration (recommended)
+      XTREAM_USER: "your_xtream_username"
+      XTREAM_PASSWORD: "your_xtream_password"
+      XTREAM_BASE_URL: "http://your-provider.com:8000"
+      XTREAM_API_GET: true
+      
+      # Port configuration
+      PORT: 8080
+      HOSTNAME: iptv
+      
+      # Authentication (CHANGE THESE!)
+      USER: "your_username"
+      PASSWORD: "your_secure_password"
+      
+      # Buffer configuration
+      BUFFER_ENABLED: true
+      BUFFER_DURATION: 5
+      BUFFER_MAX_MEMORY: 10
+      
+      # Additional settings
+      GIN_MODE: release
+      M3U_CACHE_EXPIRATION: 1
+      M3U_FILE_NAME: "iptv.m3u"
+      
+    volumes:
+      # Saltbox standard configuration mount
+      - "/opt/iptv:/config"
+      # Saltbox standard time sync
+      - "/etc/localtime:/etc/localtime:ro"
+      # Optional: Local M3U files
+      - "/opt/iptv/playlists:/playlists:ro"
+    
+    ports:
+      # Only expose if not using Traefik reverse proxy
+      - "8080:8080"
+    
+    labels:
+      # Saltbox management label
+      - "com.github.saltbox.saltbox_managed=true"
+      
+      # Traefik labels (uncomment and configure if using Traefik)
+      # - "traefik.enable=true"
+      # - "traefik.http.routers.iptv.rule=Host(`iptv.yourdomain.com`)"
+      # - "traefik.http.routers.iptv.tls=true"
+      # - "traefik.http.routers.iptv.tls.certresolver=cfdns"
+      # - "traefik.http.services.iptv.loadbalancer.server.port=8080"
+      # - "traefik.http.routers.iptv.middlewares=secureHeaders@file,authelia@file"
+
+networks:
+  saltbox:
+    external: true
